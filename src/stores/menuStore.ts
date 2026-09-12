@@ -2,7 +2,7 @@
  * 菜单状态管理（动态导航核心）
  * 菜单管理页的增删改 → 实时驱动 TabBar / 系统宫格 / 首页快捷入口
  */
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useMemo } from 'react';
 import { mockApi, type MenuConfig } from '../mock/menuConfig';
 
 // ==================== 类型 ====================
@@ -126,24 +126,27 @@ export const menuStore = {
 
 // ==================== Hooks ====================
 
-export function useMenuStore<T>(selector: (state: MenuState) => T): T {
-  return useSyncExternalStore(subscribe, () => selector(getSnapshot()), () => selector(getSnapshot()));
+/** 获取菜单原始状态（组件内用 useMemo 派生数据，避免 selector 返回新引用导致无限渲染） */
+export function useMenuState(): MenuState {
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 /** 获取 TabBar 菜单 */
 export function useTabMenus(): MenuConfig[] {
-  return useMenuStore((s) => {
-    const tabParent = s.menus.find((m) => m.path === '/tabbar');
+  const { menus } = useMenuState();
+  return useMemo(() => {
+    const tabParent = menus.find((m) => m.path === '/tabbar');
     return (tabParent?.children || []).filter((m) => m.visible).sort((a, b) => a.sort - b.sort);
-  });
+  }, [menus]);
 }
 
 /** 获取某个父路径下的子菜单 */
 export function useChildMenus(parentPath: string): MenuConfig[] {
-  return useMenuStore((s) => {
-    const parent = s.menus.find((m) => m.path === parentPath);
+  const { menus } = useMenuState();
+  return useMemo(() => {
+    const parent = menus.find((m) => m.path === parentPath);
     return (parent?.children || []).filter((m) => m.visible).sort((a, b) => a.sort - b.sort);
-  });
+  }, [menus, parentPath]);
 }
 
 export type { MenuConfig };

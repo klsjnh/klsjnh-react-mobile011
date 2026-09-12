@@ -29,6 +29,26 @@ const DepartmentPage = lazy(() => import('./pages/DepartmentPage').then(m => ({ 
 const SystemPage = lazy(() => import('./pages/SystemPage').then(m => ({ default: m.SystemPage })));
 const BusinessPage = lazy(() => import('./pages/BusinessPage').then(m => ({ default: m.BusinessPage })));
 const BusinessPlaceholderPage = lazy(() => import('./pages/BusinessPlaceholderPage').then(m => ({ default: m.BusinessPlaceholderPage })));
+// 业务功能页面
+const ConfigPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.ConfigPage })));
+const SchedulerPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.SchedulerPage })));
+const DictPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.DictPage })));
+const MonitorPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.MonitorPage })));
+const OnlineUsersPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.OnlineUsersPage })));
+const CachePage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.CachePage })));
+const DataSourcePage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.DataSourcePage })));
+const StoragePage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.StoragePage })));
+const ParamsPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.ParamsPage })));
+const TemplatePage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.TemplatePage })));
+const PushPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.PushPage })));
+const StatsPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.StatsPage })));
+const TrendPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.TrendPage })));
+const ChartsPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.ChartsPage })));
+const ExportPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.ExportPage })));
+const DashboardScreenPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.DashboardScreenPage })));
+const CalcPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.CalcPage })));
+const QueryPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.QueryPage })));
+const ServiceLogPage = lazy(() => import('./pages/business-pages').then(m => ({ default: m.ServiceLogPage })));
 
 export const App: React.FC = () => {
   const isAuthenticated = useIsAuthenticated();
@@ -43,6 +63,8 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // 初始化菜单配置（动态导航数据源）
+    menuStore.load();
     const handlePopState = () => {
       const hash = window.location.hash.replace('#', '');
       setCurrentPath(hash || '/home');
@@ -89,9 +111,9 @@ export const App: React.FC = () => {
       return <MenuFormPage onBack={() => handleNavigate('/menus')} onSaved={() => handleNavigate('/menus')} />;
     }
 
-    // 业务功能占位页（/business/*）
+    // 业务功能页面（已实现的走真实页面，未实现的走占位页）
     if (currentPath.startsWith('/business/')) {
-      const title = currentPath.split('/')[2] || '';
+      const action = currentPath.split('/')[2] || '';
       const titleMap: Record<string, string> = {
         config: '配置管理', scheduler: '定时任务', datasource: '数据源管理',
         storage: '存储中心', params: '参数设置', dict: '字典管理',
@@ -101,7 +123,36 @@ export const App: React.FC = () => {
         monitor: '系统监控', online: '在线用户', cache: '缓存管理',
         servicelog: '服务日志',
       };
-      return <BusinessPlaceholderPage title={titleMap[title] || '业务功能'} path={currentPath} onBack={() => handleNavigate('/business')} />;
+      const title = titleMap[action] || '业务功能';
+      const backTo = () => handleNavigate('/business');
+
+      // 已实现的功能 → 真实页面
+      const realPages: Record<string, React.FC<any>> = {
+        config: ConfigPage,
+        scheduler: SchedulerPage,
+        dict: DictPage,
+        monitor: MonitorPage,
+        online: OnlineUsersPage,
+        cache: CachePage,
+        datasource: DataSourcePage,
+        storage: StoragePage,
+        params: ParamsPage,
+        template: TemplatePage,
+        push: PushPage,
+        stats: StatsPage,
+        trend: TrendPage,
+        charts: ChartsPage,
+        export: ExportPage,
+        dashboard: DashboardScreenPage,
+        calc: CalcPage,
+        query: QueryPage,
+        servicelog: ServiceLogPage,
+      };
+      const RealPage = realPages[action];
+      if (RealPage) return <RealPage onBack={backTo} />;
+
+      // 未实现的 → 占位页
+      return <BusinessPlaceholderPage title={title} path={currentPath} onBack={backTo} />;
     }
 
     // 所有页面路由
