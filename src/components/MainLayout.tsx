@@ -1,8 +1,9 @@
 /**
- * 主布局组件 - 底部 TabBar 导航
+ * 主布局组件 - 底部 TabBar 导航（由菜单配置驱动）
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useCurrentUser, authStore } from '../stores/authStore';
+import { menuStore, useTabMenus } from '../stores/menuStore';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -10,14 +11,8 @@ interface MainLayoutProps {
   onNavigate: (path: string) => void;
 }
 
-/** TabBar 配置 */
-const tabs = [
-  { path: '/home', label: '首页', icon: '🏠' },
-  { path: '/users', label: '用户', icon: '👥' },
-  { path: '/roles', label: '角色', icon: '🛡' },
-  { path: '/menus', label: '菜单', icon: '📋' },
-  { path: '/profile', label: '我的', icon: '👤' },
-];
+/** 系统管理子路径（高亮"系统"Tab） */
+const systemPaths = ['/system', '/users', '/roles', '/menus', '/permissions', '/departments', '/role-groups'];
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
   children,
@@ -25,11 +20,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   onNavigate,
 }) => {
   const user = useCurrentUser();
+  const tabMenus = useTabMenus();
 
-  // 获取当前激活的 tab
-  const activeTab = tabs.find(t => currentPath === t.path || currentPath.startsWith(t.path + '/'))
-    ? tabs.find(t => currentPath === t.path || currentPath.startsWith(t.path + '/'))!.path
-    : '/home';
+  // 初始化菜单
+  useEffect(() => {
+    menuStore.load();
+  }, []);
+
+  // 获取当前激活的 tab（系统管理子页面也高亮"系统"）
+  const activeTab = (() => {
+    if (systemPaths.some(p => currentPath === p || currentPath.startsWith(p + '/'))) return '/system';
+    const match = tabMenus.find(t => currentPath === t.path || currentPath.startsWith(t.path + '/'));
+    return match ? match.path : tabMenus[0]?.path || '/home';
+  })();
 
   const handleLogout = () => {
     if (window.confirm('确定要退出登录吗？')) {
@@ -57,11 +60,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         zIndex: 100,
         paddingBottom: 'var(--safe-bottom)',
       }}>
-        {tabs.map((tab) => {
+        {tabMenus.map((tab) => {
           const isActive = activeTab === tab.path;
           return (
             <button
-              key={tab.path}
+              key={tab.id}
               onClick={() => onNavigate(tab.path)}
               style={{
                 flex: 1,
@@ -80,7 +83,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               }}
             >
               <span style={{ fontSize: '20px' }}>{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span>{tab.title}</span>
             </button>
           );
         })}

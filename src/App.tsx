@@ -5,6 +5,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { LoginPage } from './pages/LoginPage';
 import { MainLayout } from './components/MainLayout';
 import { useIsAuthenticated } from './stores/authStore';
+import { menuStore } from './stores/menuStore';
 
 // 懒加载所有页面
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -25,6 +26,9 @@ const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m
 const PermissionsPage = lazy(() => import('./pages/PermissionsPage').then(m => ({ default: m.PermissionsPage })));
 const PermissionRelationPage = lazy(() => import('./pages/PermissionRelationPage').then(m => ({ default: m.PermissionRelationPage })));
 const DepartmentPage = lazy(() => import('./pages/DepartmentPage').then(m => ({ default: m.DepartmentPage })));
+const SystemPage = lazy(() => import('./pages/SystemPage').then(m => ({ default: m.SystemPage })));
+const BusinessPage = lazy(() => import('./pages/BusinessPage').then(m => ({ default: m.BusinessPage })));
+const BusinessPlaceholderPage = lazy(() => import('./pages/BusinessPlaceholderPage').then(m => ({ default: m.BusinessPlaceholderPage })));
 
 export const App: React.FC = () => {
   const isAuthenticated = useIsAuthenticated();
@@ -85,9 +89,26 @@ export const App: React.FC = () => {
       return <MenuFormPage onBack={() => handleNavigate('/menus')} onSaved={() => handleNavigate('/menus')} />;
     }
 
+    // 业务功能占位页（/business/*）
+    if (currentPath.startsWith('/business/')) {
+      const title = currentPath.split('/')[2] || '';
+      const titleMap: Record<string, string> = {
+        config: '配置管理', scheduler: '定时任务', datasource: '数据源管理',
+        storage: '存储中心', params: '参数设置', dict: '字典管理',
+        template: '通知模板', push: '消息推送', stats: '数据统计',
+        trend: '趋势分析', charts: '图表展示', export: '数据导出',
+        dashboard: '数据大屏', calc: '数据计算', query: '数据查询',
+        monitor: '系统监控', online: '在线用户', cache: '缓存管理',
+        servicelog: '服务日志',
+      };
+      return <BusinessPlaceholderPage title={titleMap[title] || '业务功能'} path={currentPath} onBack={() => handleNavigate('/business')} />;
+    }
+
     // 所有页面路由
     const pageMap: Record<string, React.FC<any>> = {
       '/home': HomePage,
+      '/system': SystemPage,
+      '/business': BusinessPage,
       '/users': UserListPage,
       '/roles': RoleListPage,
       '/menus': MenuListPage,
